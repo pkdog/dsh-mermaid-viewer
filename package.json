@@ -1,0 +1,41 @@
+{
+  "name": "@local/dsh-mermaid-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders the ```mermaid diagrams of a finished reply on demand, in a frame-wide viewer.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "client.mermaid.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build:mermaid": "node scripts/build-mermaid-chunk.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-chat",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-session-projection"
+      ]
+    }
+  }
+}

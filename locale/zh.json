@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Mermaid 渲染",
+    "description": "在含有 mermaid 代码块的最终回复上增加一个渲染按钮，点击后在浮层中把图绘制出来。"
+  }
+}

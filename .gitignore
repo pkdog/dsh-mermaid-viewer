@@ -1,0 +1,7 @@
+# Editor and OS noise.
+.DS_Store
+.idea/
+.vscode/
+
+# Local installs.
+node_modules/

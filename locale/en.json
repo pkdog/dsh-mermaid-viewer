@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Mermaid Viewer",
+    "description": "Adds a render action to each finished reply that contains a fenced mermaid block and draws those diagrams in a frame-wide viewer."
+  }
+}

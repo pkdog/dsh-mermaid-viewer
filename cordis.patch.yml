@@ -1,0 +1,6 @@
+# One row: the Host half folds every assistant message into the `mermaidDiagrams`
+# session projection; the Client half adds the per-reply render action and the
+# frame-wide viewer.
+- insert:
+    - id: dsh-mermaid-viewer
+      name: '@local/dsh-mermaid-viewer'
