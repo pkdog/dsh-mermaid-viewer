@@ -16,7 +16,7 @@
 | 半边 | 位置 | 做什么 |
 |---|---|---|
 | Host | `index.js` | 注册 `mermaidDiagrams` session projection：把每条 `assistant/message` 的 text 块里围栏为 `mermaid` 的代码块抽出来，折叠成 `{ messageId: string[] }`，随 projection 机制送到浏览器并写入投影缓存。 |
-| Client | `client.js` | `conversation.chat.assistant-actions` 里按 `messageId` 读投影值决定是否显示按钮；`shell.overlay` 里挂一个浮层查看器，点击后 `require.async('./client.mermaid.js')` 懒加载 mermaid，逐张 `parse` + `render` 成 SVG，每张 SVG 交给一个自带缩放视口的卡片。 |
+| Client | `client.js` | `conversation.chat.assistant-actions` 里按 `messageId` 读投影值决定是否显示按钮；`shell.overlay` 里挂一个浮层查看器，点击后 `require.async('./client.mermaid.js')` 懒加载 mermaid，逐张 `render` 成 SVG（每张完成即显示，失败单张报错），每张 SVG 交给一个自带缩放视口的卡片。 |
 | 资源 | `client.mermaid.js` | vendored 的 mermaid 11.16.0 浏览器构建（MIT，见 `NOTICE`），按 DSH Client 模块加载器的包内 chunk 协议包装。 |
 
 浏览器半边不自己折会话日志（那是 Host projection 的职责），也不 import 任何
@@ -58,8 +58,8 @@ flowchart LR
 `client.mermaid.js` 由脚本生成，不要手改：
 
 ```sh
-node scripts/build-mermaid-chunk.mjs            # 默认取 DSH checkout 里的 mermaid
-DSH_MERMAID_ROOT=/path/to/checkout node scripts/build-mermaid-chunk.mjs
+node scripts/build-mermaid-chunk.mjs            # 取 $DSH_ROOT 里的 mermaid
+DSH_ROOT=/path/to/checkout node scripts/build-mermaid-chunk.mjs
 node scripts/build-mermaid-chunk.mjs /path/to/mermaid.min.js
 ```
 
@@ -73,11 +73,14 @@ chunk URL 用它做不可变缓存键，不 touch 就会继续命中旧 chunk。
 
 ## 本地检查
 
+`DSH_ROOT` 指向一个 node_modules 里带有 mermaid（构建）和 jsdom/react（smoke 测试）的
+DeepSeek Harness checkout；变量未设置时脚本会直接报错并提示。
+
 ```sh
 node --check index.js && node --check client.js
-node scripts/test-host-fold.mjs        # 围栏抽取与 projection 状态迁移
-node scripts/smoke-mermaid-chunk.mjs   # chunk 注册、API 形状、parse（渲染需要真实浏览器）
-node scripts/smoke-diagram-card.mjs    # 卡片视口：适应比例、缩放步进、双击切换、全屏调用、Esc 关闭
+node scripts/test-host-fold.mjs        # 围栏抽取、schema 拒绝与 projection 状态迁移
+DSH_ROOT=… node scripts/smoke-mermaid-chunk.mjs   # chunk 注册、API 形状、parse（渲染需要真实浏览器）
+DSH_ROOT=… node scripts/smoke-diagram-card.mjs    # 卡片视口：适应比例、缩放步进、双击切换、全屏调用、Esc 关闭
 ```
 
 `smoke-mermaid-chunk.mjs` 用 jsdom，只能验证到 `mermaid.parse`：mermaid 用

@@ -16,9 +16,15 @@ import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
 const PLUGIN_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-/** React and jsdom come from the Harness checkout this bundle is installed beside. */
-const HARNESS = '/Users/chengyunquan/tools/deepseek-harness'
-const require = createRequire(join(HARNESS, 'packages/client/ui-primitives/package.json'))
+/**
+ * React and jsdom come from the Harness checkout named by DSH_ROOT; there is
+ * no machine-independent default.
+ */
+const harness = process.env.DSH_ROOT
+if (harness === undefined || harness === '') {
+  throw new Error('Set DSH_ROOT to the DeepSeek Harness checkout that supplies react and jsdom for this smoke test')
+}
+const require = createRequire(join(harness, 'packages/client/ui-primitives/package.json'))
 const { JSDOM } = require('jsdom')
 
 const SOURCE = 'flowchart LR\n  A[Start] --> B[Ship]'

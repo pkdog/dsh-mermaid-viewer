@@ -548,7 +548,12 @@ window.__ModuleLoader__.load({
           ? VIEWPORT_MIN_HEIGHT
           : clamp(intrinsic.height * fit, VIEWPORT_MIN_HEIGHT, Math.max(heightCap, VIEWPORT_MIN_HEIGHT)))}px`
 
-      /** Values the last paint used; gesture handlers read these instead of re-subscribing. */
+      /**
+       * Values the last paint used; gesture handlers read these instead of
+       * re-subscribing. Written during render on purpose: every field derives
+       * from the same render's state, so a StrictMode double render writes the
+       * identical value.
+       */
       const renderedRef = useRef({ scale: 1, x: 0, y: 0 })
       renderedRef.current = { scale, x: offsetX, y: offsetY }
 
@@ -761,7 +766,6 @@ window.__ModuleLoader__.load({
           const rendered = []
           for (const source of sources) {
             try {
-              await mermaid.parse(source)
               renderSeq += 1
               const result = await mermaid.render(`dshmm-${renderSeq}`, source)
               rendered.push({ ok: true, svg: result.svg })
@@ -769,8 +773,10 @@ window.__ModuleLoader__.load({
               rendered.push({ ok: false, message: describeError(error) })
             }
             if (cancelled) return
+            // Publish as each diagram settles: render parses too, and the
+            // reader watches finished diagrams while the rest draw.
+            setResults([...rendered])
           }
-          if (!cancelled) setResults(rendered)
         })()
         return () => { cancelled = true }
       }, [sources])
@@ -781,7 +787,9 @@ window.__ModuleLoader__.load({
           if (event.key !== 'Escape') return
           // Full screen owns Escape: the browser leaves it before the dialog closes.
           if (document.fullscreenElement) return
-          event.stopPropagation()
+          // Immediate stop: a same-target document listener registered later
+          // must not close another overlay behind this one.
+          event.stopImmediatePropagation()
           close()
         }
         document.addEventListener('keydown', onKeyDown, true)

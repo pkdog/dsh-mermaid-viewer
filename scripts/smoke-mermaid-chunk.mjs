@@ -15,7 +15,15 @@ import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
 const PLUGIN_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const require = createRequire('/Users/chengyunquan/tools/deepseek-harness/index.js')
+/**
+ * jsdom comes from the Harness checkout named by DSH_ROOT; there is no
+ * machine-independent default.
+ */
+const harness = process.env.DSH_ROOT
+if (harness === undefined || harness === '') {
+  throw new Error('Set DSH_ROOT to the DeepSeek Harness checkout that supplies jsdom for this smoke test')
+}
+const require = createRequire(join(harness, 'index.js'))
 const { JSDOM } = require('jsdom')
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { pretendToBeVisual: true })

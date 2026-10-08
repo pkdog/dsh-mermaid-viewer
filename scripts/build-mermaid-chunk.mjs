@@ -14,8 +14,8 @@
  * regenerated chunk under a fresh revision.
  *
  * Usage: node scripts/build-mermaid-chunk.mjs [path/to/mermaid.min.js]
- * Default source: `node_modules/mermaid/dist/mermaid.min.js` under
- * DSH_MERMAID_ROOT, a checkout whose node_modules already carries mermaid.
+ * Default source: `node_modules/mermaid/dist/mermaid.min.js` under DSH_ROOT,
+ * a DeepSeek Harness checkout whose node_modules already carries mermaid.
  */
 import { createRequire } from 'node:module'
 import { readFileSync, utimesSync, writeFileSync } from 'node:fs'
@@ -26,11 +26,24 @@ const PLUGIN_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const OWNER_ID = '@local/dsh-mermaid-viewer'
 const CHUNK_FILE = 'client.mermaid.js'
 
+/**
+ * The checkout whose node_modules supplies mermaid. There is no
+ * machine-independent default, so an unset variable fails with instructions.
+ * @returns the checkout root.
+ */
+function harnessRoot() {
+  const root = process.env.DSH_ROOT
+  if (root === undefined || root === '') {
+    throw new Error(
+      'Set DSH_ROOT to the DeepSeek Harness checkout whose node_modules carries mermaid, '
+      + 'or pass the mermaid.min.js path as the only argument',
+    )
+  }
+  return root
+}
+
 const source = process.argv[2] === undefined
-  ? join(
-    process.env.DSH_MERMAID_ROOT ?? '/Users/chengyunquan/tools/deepseek-harness',
-    'node_modules/mermaid/dist/mermaid.min.js',
-  )
+  ? join(harnessRoot(), 'node_modules/mermaid/dist/mermaid.min.js')
   : resolve(process.argv[2])
 
 const body = readFileSync(source, 'utf8')

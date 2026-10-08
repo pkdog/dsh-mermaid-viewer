@@ -41,6 +41,16 @@ assert.deepEqual(
   ['flowchart LR', 'graph TD'],
   'two fences yield two sources',
 )
+assert.deepEqual(
+  mermaidSources('```mermaid\r\nflowchart LR\r\n  A-->B\r\n```'),
+  ['flowchart LR\n  A-->B'],
+  'CRLF line endings are normalized',
+)
+assert.deepEqual(
+  mermaidSources('```mermaid\nflowchart LR\n~~~\n```'),
+  ['flowchart LR\n~~~'],
+  'a tilde line cannot close a backtick fence',
+)
 
 const initial = projection.init({}, 0)
 assert.deepEqual(initial, { diagrams: {} }, 'empty state')
@@ -62,5 +72,28 @@ assert.equal(
 
 const second = projection.apply(withDiagram, event('m2', '```mermaid\nflowchart LR\n  C-->D\n```'))
 assert.deepEqual(Object.keys(second.diagrams), ['m1', 'm2'], 'later messages extend the map')
+
+assert.throws(
+  () => projection.stateSchema.parse(null),
+  'a null persisted row is rejected so the seam drops and refolds it',
+)
+assert.throws(
+  () => projection.stateSchema.parse({ diagrams: { m1: 'not-an-array' } }),
+  'a non-array entry in the persisted state is rejected',
+)
+assert.deepEqual(
+  projection.stateSchema.parse({ diagrams: { m1: ['graph TD'] } }),
+  { diagrams: { m1: ['graph TD'] } },
+  'a valid persisted row passes its schema',
+)
+assert.throws(
+  () => projection.wire.viewSchema.parse('garbage'),
+  'a malformed wire value is rejected',
+)
+assert.deepEqual(
+  projection.wire.viewSchema.parse({ m1: ['graph TD'] }),
+  { m1: ['graph TD'] },
+  'a valid wire value passes its schema',
+)
 
 console.log('ok: fence extraction and projection transitions')

@@ -32,16 +32,41 @@ export const PROJECTION_KEY = 'mermaidDiagrams'
 const STATE_VERSION = 1
 
 /**
- * The seam validates persisted state and every published view with the unit's
- * schemas. Both shapes here are produced and consumed only by this plugin (a
- * message-id keyed object of string arrays read back through the wire), so the
- * schema states that acceptance explicitly instead of duplicating the fold.
+ * Validate one message-id keyed map of diagram sources. The seam treats a
+ * schema rejection as "drop this row and refold": a malformed persisted
+ * projection-cache row or wire value fails soft here, so the schemas must
+ * reject shapes the fold cannot produce instead of passing them through.
+ * @param value - candidate map.
+ * @returns the same map once every entry is a string array.
+ * @throws {Error} when the value is not an object of string arrays.
  */
-const anyValue = {
+function parseDiagramMap(value) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('mermaidDiagrams value must be a message-id keyed object')
+  }
+  for (const sources of Object.values(value)) {
+    if (!Array.isArray(sources) || sources.some(source => typeof source !== 'string')) {
+      throw new Error('mermaidDiagrams entries must be arrays of diagram sources')
+    }
+  }
+  return value
+}
+
+/**
+ * The unit's two validation boundaries over the shapes this plugin owns: the
+ * persisted fold state (`{ diagrams }`, read back from the projection cache)
+ * and the published wire value (the diagrams map itself).
+ */
+const stateSchema = {
   parse(value) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new Error('mermaidDiagrams state must be an object carrying diagrams')
+    }
+    parseDiagramMap(value.diagrams)
     return value
   },
 }
+const viewSchema = { parse: parseDiagramMap }
 
 /** Opening fence: up to three spaces, three or more backticks or tildes, then the info word. */
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})[ \t]*([^ `]*)/
@@ -59,7 +84,7 @@ export function mermaidSources(text) {
   let marker = null
   let collecting = false
   let body = []
-  for (const line of text.split('\n')) {
+  for (const line of text.split(/\r?\n/)) {
     if (marker === null) {
       const open = FENCE_OPEN.exec(line)
       if (open === null) continue
@@ -104,7 +129,7 @@ export function sourcesOf(event) {
  */
 export const mermaidDiagramsProjection = {
   key: PROJECTION_KEY,
-  stateSchema: anyValue,
+  stateSchema,
   stateVersion: STATE_VERSION,
   init: () => ({ diagrams: {} }),
   apply: (state, event) => {
@@ -116,7 +141,7 @@ export const mermaidDiagramsProjection = {
     return { diagrams: { ...state.diagrams, [messageId]: sources } }
   },
   wire: {
-    viewSchema: anyValue,
+    viewSchema,
     view: state => state.diagrams,
   },
 }
